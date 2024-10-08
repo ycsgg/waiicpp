@@ -74,6 +74,7 @@ class Program : public Node {
     }
 };
 class Identifier : public Expression {
+    public:
     Token token;
     string value;
 
@@ -105,6 +106,9 @@ class LetStatement : public Statement {
     public:
     Expression *value() {
         return Value.get();
+    }
+    Identifier *name() {
+        return Name.get();
     }
     string statementNode() {
         return "";

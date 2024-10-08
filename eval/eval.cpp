@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ast/ast.cpp"
+#include "./env.cpp"
 #include "./object.cpp"
 #include <format>
 #include <memory>
@@ -18,6 +19,7 @@ using std::unique_ptr;
 using std::vector;
 using token::TokenType;
 
+using namespace environment;
 using namespace object;
 
 typedef shared_ptr<Object> obj_ptr;
@@ -42,8 +44,10 @@ _NodeTypeCast<T> _isType(ast::Node *node) {
     return _res;
 }
 
-obj_ptr evalStatements(const vector<unique_ptr<ast::Statement>> &statements);
-obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements);
+obj_ptr evalStatements(const vector<unique_ptr<ast::Statement>> &statements,
+                       env_ptr env);
+obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements,
+                     env_ptr env);
 
 obj_ptr evalPrefixExpression(token::TokenType, obj_ptr obj);
 
@@ -56,18 +60,20 @@ obj_ptr evalCalcExpression(token::TokenType typ, obj_ptr left, obj_ptr right);
 
 obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right);
 
-obj_ptr evalIfExpression(ast::IfExpression *ifexpr);
+obj_ptr evalIfExpression(ast::IfExpression *ifexpr, env_ptr env);
 
-obj_ptr Eval(ast::Node *node) {
+obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env);
+
+obj_ptr Eval(ast::Node *node, env_ptr env) {
 
 #define isType(typ) auto _t = _isType<typ>(node)
 
     if (isType(ast::Program)) {
-        return evalPrograms(_t.res->statements());
+        return evalPrograms(_t.res->statements(), env);
     }
 
     if (isType(ast::ExpressionStatement)) {
-        return Eval(_t.res->expression());
+        return Eval(_t.res->expression(), env);
     }
 
     if (isType(ast::IntegerLiteral)) {
@@ -83,29 +89,44 @@ obj_ptr Eval(ast::Node *node) {
     }
 
     if (isType(ast::PrefixExpression)) {
-        auto right = Eval(_t.res->right());
+        auto right = Eval(_t.res->right(), env);
         return evalPrefixExpression(_t.res->TokenType(), right);
     }
 
     if (isType(ast::InfixExpression)) {
-        auto left = Eval(_t.res->left());
-        auto right = Eval(_t.res->right());
+        auto left = Eval(_t.res->left(), env);
+        auto right = Eval(_t.res->right(), env);
         return evalInfixExpression(_t.res->TokenType(), left, right);
     }
     if (isType(ast::IfExpression)) {
-        return evalIfExpression(_t.res);
+        return evalIfExpression(_t.res, env);
     }
     if (isType(ast::BlockStatement)) {
-        return evalStatements(_t.res->statements());
+        return evalStatements(_t.res->statements(), env);
     }
     if (isType(ast::ReturnStatement)) {
-        auto val = Eval(_t.res->returnValue());
+        auto val = Eval(_t.res->returnValue(), env);
         return make_shared<ReturnValue>(val);
+    }
+    if (isType(ast::LetStatement)) {
+        auto val = Eval(_t.res->value(), env);
+        env->set(_t.res->name()->value, val);
+    }
+    if (isType(ast::Identifier)) {
+        return evalIdentifer(_t.res, env);
     }
 
     return _NULL;
 
 #undef isType
+}
+
+obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env) {
+    auto [ok, val] = env->get(ident->value);
+    if (ok) {
+        return val;
+    }
+    throw newError("identifier not found: {}", ident->value);
 }
 
 obj_ptr evalPrefixExpression(token::TokenType typ, obj_ptr obj) {
@@ -117,15 +138,16 @@ obj_ptr evalPrefixExpression(token::TokenType typ, obj_ptr obj) {
         return evalMinusPrefixExpression(obj);
     default:
         throw newError("unknown operator: {}{}", token::TypeToSymbol(typ),
-                        obj->Inspect());
+                       obj->Inspect());
     }
     return _NULL;
 }
 
-obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements) {
+obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements,
+                     env_ptr env) {
     obj_ptr res;
     for (auto &stmt : statements) {
-        res = Eval(stmt.get());
+        res = Eval(stmt.get(), env);
         if (res != nullptr) {
             if (type(res) == Return) {
                 return dynamic_cast<ReturnValue *>(res.get())->Value;
@@ -139,10 +161,11 @@ obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements) {
     return res;
 }
 
-obj_ptr evalStatements(const vector<unique_ptr<ast::Statement>> &statements) {
+obj_ptr evalStatements(const vector<unique_ptr<ast::Statement>> &statements,
+                       env_ptr env) {
     obj_ptr res;
     for (auto &stmt : statements) {
-        res = Eval(stmt.get());
+        res = Eval(stmt.get(), env);
         if (res != nullptr) {
             if (type(res) == Return) {
                 return res;
@@ -200,7 +223,7 @@ obj_ptr evalInfixExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
         return evalLogicExpression(typ, left, right);
     default:
         throw newError("unknown operator: {} {} {}", left->Inspect(),
-                        token::TypeToSymbol(typ), right->Inspect());
+                       token::TypeToSymbol(typ), right->Inspect());
     }
 }
 
@@ -276,7 +299,7 @@ obj_ptr evalCalcExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
         }
     }
     throw newError("type mismatch: {} {} {}", left->Inspect(),
-                    token::TypeToSymbol(typ), right->Inspect());
+                   token::TypeToSymbol(typ), right->Inspect());
 }
 
 obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
@@ -296,7 +319,7 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
             return make_shared<Boolean>(_logicFunction(typ, valLeft, valRight));
         }
         throw newError("type mismatch: {} {} {}", left->Inspect(),
-                        token::TypeToSymbol(typ), right->Inspect());
+                       token::TypeToSymbol(typ), right->Inspect());
     };
     if (typLeft == Float) {
         auto valLeft = getValue<Double>(left);
@@ -311,7 +334,7 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
         return func(valLeft);
     }
     throw newError("type mismatch: {} {} {}", left->Inspect(),
-                    token::TypeToSymbol(typ), right->Inspect());
+                   token::TypeToSymbol(typ), right->Inspect());
 }
 
 bool isTrue(obj_ptr obj) {
@@ -329,12 +352,12 @@ bool isTrue(obj_ptr obj) {
     }
 }
 
-obj_ptr evalIfExpression(ast::IfExpression *ifexpr) {
-    auto condition_res = Eval(ifexpr->condition());
+obj_ptr evalIfExpression(ast::IfExpression *ifexpr, env_ptr env) {
+    auto condition_res = Eval(ifexpr->condition(), env);
     if (isTrue(condition_res)) {
-        return Eval(ifexpr->consequence());
+        return Eval(ifexpr->consequence(), env);
     } else if (ifexpr->Alternative != nullptr) {
-        return Eval(ifexpr->alternative());
+        return Eval(ifexpr->alternative(), env);
     } else {
         return _NULL;
     }
