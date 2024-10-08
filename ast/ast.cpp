@@ -195,7 +195,7 @@ class FunctionStatement : public Statement {
     Token token;
     unique_ptr<Identifier> Name;
     vector<shared_ptr<Identifier>> Parameters;
-    unique_ptr<BlockStatement> Body;
+    shared_ptr<BlockStatement> Body;
 
     public:
     Identifier *name() {
@@ -204,8 +204,8 @@ class FunctionStatement : public Statement {
     vector<shared_ptr<Identifier>> &parameters() {
         return Parameters;
     }
-    BlockStatement *body() {
-        return Body.get();
+    shared_ptr<BlockStatement> body() {
+        return Body;
     }
     string TokenLiteral() {
         return token.Literal;
@@ -396,9 +396,15 @@ class FunctionLiteral : public Expression {
     public:
     Token token;
     vector<shared_ptr<Identifier>> Parameters;
-    unique_ptr<BlockStatement> Body;
+    shared_ptr<BlockStatement> Body;
 
     public:
+    vector<shared_ptr<Identifier>> &parameters() {
+        return Parameters;
+    }
+    shared_ptr<BlockStatement> body() {
+        return Body;
+    }
     string TokenLiteral() {
         return token.Literal;
     }

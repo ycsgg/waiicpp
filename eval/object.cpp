@@ -1,24 +1,17 @@
 #pragma once
 
+#include "object.hpp"
+#include "../ast/ast.cpp"
+#include "env.cpp"
 #include <format>
 #include <memory>
 #include <string>
 
 namespace object {
 
-enum Type { _Null, Int, Float, Bool, Return, Error };
-
 using std::format;
 using std::shared_ptr;
 using std::string;
-
-class Object {
-    public:
-    virtual Type ObjectType() = 0;
-    virtual string Inspect() = 0;
-};
-
-typedef shared_ptr<Object> obj_ptr;
 
 class Integer : public Object {
     public:
@@ -103,6 +96,47 @@ class ErrorObject : public Object {
         return "Error: " + Message;
     }
     ErrorObject(string msg) : Message(msg) {
+    }
+};
+
+class FunctionObject : public Object {
+    public:
+    std::vector<shared_ptr<ast::Identifier>> Parameters;
+    shared_ptr<ast::BlockStatement> Body;
+    environment::env_ptr Env;
+
+    Type ObjectType() {
+        return Function;
+    }
+
+    string shortInspect() {
+        std::string params;
+        for (auto para : Parameters) {
+            params += para->value + ",";
+        }
+        if (!params.empty()) {
+            params.pop_back();
+        }
+        return format("fn({})", params);
+    }
+
+    string Inspect() {
+        std::string params;
+        for (auto para : Parameters) {
+            params += para->value + ",";
+        }
+        if (!params.empty()) {
+            params.pop_back();
+        }
+        return format("fn({}) {{{}}}", params, Body->output());
+    }
+
+    FunctionObject(std::vector<shared_ptr<ast::Identifier>> params,
+                   shared_ptr<ast::BlockStatement> body,
+                   environment::env_ptr env) {
+        Parameters = params;
+        Body = body;
+        Env = env;
     }
 };
 

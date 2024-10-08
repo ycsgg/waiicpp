@@ -52,6 +52,7 @@ obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements,
 obj_ptr evalPrefixExpression(token::TokenType, obj_ptr obj);
 
 obj_ptr evalBangOperatorExpression(obj_ptr obj);
+
 obj_ptr evalMinusPrefixExpression(obj_ptr obj);
 
 obj_ptr evalInfixExpression(token::TokenType typ, obj_ptr left, obj_ptr right);
@@ -63,6 +64,11 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right);
 obj_ptr evalIfExpression(ast::IfExpression *ifexpr, env_ptr env);
 
 obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env);
+
+vector<obj_ptr>
+evalExpressions(const vector<unique_ptr<ast::Expression>> &exprs, env_ptr env);
+
+obj_ptr applyFunction(obj_ptr func, const vector<obj_ptr> &args);
 
 obj_ptr Eval(ast::Node *node, env_ptr env) {
 
@@ -116,10 +122,63 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
     if (isType(ast::Identifier)) {
         return evalIdentifer(_t.res, env);
     }
+    if (isType(ast::FunctionLiteral)) {
+        return make_shared<FunctionObject>(_t.res->parameters(), _t.res->body(),
+                                           env);
+    }
+    if (isType(ast::FunctionStatement)) {
+        auto func = make_shared<FunctionObject>(_t.res->parameters(),
+                                                _t.res->body(), env);
+        env->set(_t.res->name()->value, func);
+        return nullptr;
+    }
+    if (isType(ast::CallExpression)) {
+        auto func = Eval(_t.res->function(), env);
+        auto args = evalExpressions(_t.res->arguments(), env);
+        return applyFunction(func, args);
+    }
 
     return _NULL;
 
 #undef isType
+}
+
+env_ptr extendFunctionEnv(FunctionObject *func, const vector<obj_ptr> &args) {
+    env_ptr env = make_shared<Enviroment>(func->Env);
+    if (func->Parameters.size() != args.size()) {
+        throw newError("function {} expected {} arguments, got {}",
+                       func->shortInspect(), func->Parameters.size(), args.size());
+    }
+    for (size_t i = 0; i < func->Parameters.size(); i++) {
+        env->set(func->Parameters[i]->value, args[i]);
+    }
+    return env;
+}
+
+obj_ptr unwarpReturnValue(obj_ptr obj) {
+    if (type(obj) == Return) {
+        return dynamic_cast<ReturnValue *>(obj.get())->Value;
+    }
+    return _NULL;
+}
+
+obj_ptr applyFunction(obj_ptr func, const vector<obj_ptr> &args) {
+    if (type(func) == Function) {
+        auto function = dynamic_cast<FunctionObject *>(func.get());
+        auto env = extendFunctionEnv(function, args);
+        auto res = Eval(function->Body.get(), env);
+        return unwarpReturnValue(res);
+    }
+    throw newError("not a function: {}", TypeToString(type(func)));
+}
+
+vector<obj_ptr>
+evalExpressions(const vector<unique_ptr<ast::Expression>> &exprs, env_ptr env) {
+    vector<obj_ptr> res;
+    for (auto &expr : exprs) {
+        res.push_back(Eval(expr.get(), env));
+    }
+    return res;
 }
 
 obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env) {
@@ -139,7 +198,7 @@ obj_ptr evalPrefixExpression(token::TokenType typ, obj_ptr obj) {
         return evalMinusPrefixExpression(obj);
     default:
         throw newError("unknown operator: {}{}", token::TypeToSymbol(typ),
-                       obj->Inspect());
+                       TypeToString(type(obj)));
     }
     return _NULL;
 }
@@ -203,7 +262,7 @@ obj_ptr evalMinusPrefixExpression(obj_ptr obj) {
     if (_isType<Double>(obj)) {
         return make_shared<Double>(-getValue<Double>(obj));
     }
-    throw newError("unknown operator: -{}", obj->Inspect());
+    throw newError("unknown operator: -{}", TypeToString(type(obj)));
 }
 
 obj_ptr evalInfixExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
@@ -223,8 +282,8 @@ obj_ptr evalInfixExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
     case token::OR:
         return evalLogicExpression(typ, left, right);
     default:
-        throw newError("unknown operator: {} {} {}", left->Inspect(),
-                       token::TypeToSymbol(typ), right->Inspect());
+        throw newError("unknown operator: {} {} {}", TypeToString(type(left)),
+                       token::TypeToSymbol(typ), TypeToString(type(right)));
     }
 }
 
@@ -299,8 +358,8 @@ obj_ptr evalCalcExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
             }
         }
     }
-    throw newError("type mismatch: {} {} {}", left->Inspect(),
-                   token::TypeToSymbol(typ), right->Inspect());
+    throw newError("type mismatch: {} {} {}", TypeToString(type(left)),
+                   token::TypeToSymbol(typ), TypeToString(type(right)));
 }
 
 obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
@@ -319,8 +378,8 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
             auto valRight = getValue<Boolean>(right);
             return make_shared<Boolean>(_logicFunction(typ, valLeft, valRight));
         }
-        throw newError("type mismatch: {} {} {}", left->Inspect(),
-                       token::TypeToSymbol(typ), right->Inspect());
+        throw newError("type mismatch: {} {} {}", TypeToString(type(left)),
+                       token::TypeToSymbol(typ), TypeToString(type(right)));
     };
     if (typLeft == Float) {
         auto valLeft = getValue<Double>(left);
@@ -334,8 +393,8 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
         auto valLeft = getValue<Boolean>(left);
         return func(valLeft);
     }
-    throw newError("type mismatch: {} {} {}", left->Inspect(),
-                   token::TypeToSymbol(typ), right->Inspect());
+    throw newError("type mismatch: {} {} {}", TypeToString(type(left)),
+                   token::TypeToSymbol(typ), TypeToString(type(right)));
 }
 
 bool isTrue(obj_ptr obj) {
