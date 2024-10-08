@@ -20,7 +20,7 @@ class Repl {
             if (P.errors.empty()) {
                 try {
                     auto ptr = eval::Eval(res.get(), env);
-                    if (ptr != object::_NULL) {
+                    if (ptr != nullptr) {
                         out << ptr->Inspect() << std::endl;
                     }
                 } catch (object::ErrorObject &e) {

@@ -111,6 +111,7 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
     if (isType(ast::LetStatement)) {
         auto val = Eval(_t.res->value(), env);
         env->set(_t.res->name()->value, val);
+        return nullptr;
     }
     if (isType(ast::Identifier)) {
         return evalIdentifer(_t.res, env);
