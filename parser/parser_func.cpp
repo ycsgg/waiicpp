@@ -23,7 +23,7 @@ void Parser::registerAll() {
     registerPrefixFunc(token::FALSE, parseBooleanLiteral);
     registerPrefixFunc(token::LPAREN, parseGroupedExpression);
     registerPrefixFunc(token::IF, parseIfExpression);
-    // registerPrefixFunc(token::LBRACE, parseGroupedExpression);
+    registerPrefixFunc(token::LBRACKET, parseArrayLiteral);
     registerPrefixFunc(token::FUNCTION, parseFunctionLiteral);
 
     // Infix
@@ -44,6 +44,7 @@ void Parser::registerAll() {
     registerInfixFunc(token::IDENT, parseIdentInfixExpression);
     registerInfixFunc(token::TRUE, parseIdentInfixExpression);
     registerInfixFunc(token::FALSE, parseIdentInfixExpression);
+    registerInfixFunc(token::LBRACKET, parseIndexExpression);
 }
 
 unique_ptr<Expression> Parser::parseIdentifier() {
@@ -96,6 +97,37 @@ unique_ptr<Expression> Parser::parseBooleanLiteral() {
     return res;
 }
 
+vector<unique_ptr<Expression>>
+Parser::parseExpressionList(token::TokenType end) {
+    vector<unique_ptr<Expression>> res;
+    if (peekTokenIs(end)) {
+        nextToken();
+        return res;
+    }
+
+    nextToken();
+    res.push_back(parseExpression(LOWEST));
+
+    while (peekTokenIs(token::COMMA)) {
+        nextToken();
+        nextToken();
+        res.push_back(parseExpression(LOWEST));
+    }
+
+    if (!expectToken(end)) {
+        return res;
+    }
+
+    return res;
+}
+
+unique_ptr<Expression> Parser::parseArrayLiteral() {
+    auto res = make_unique<ArrayLiteral>();
+    res->token = curToken;
+    res->Elements = parseExpressionList(token::RBRACKET);
+    return res;
+}
+
 unique_ptr<Expression> Parser::parsePrefixExpression() {
     auto res = make_unique<PrefixExpression>();
     res->token = curToken;
@@ -140,37 +172,29 @@ Parser::parseIdentInfixExpression(unique_ptr<Expression> left) {
 }
 
 unique_ptr<Expression>
+Parser::parseIndexExpression(unique_ptr<Expression> left) {
+    auto res = make_unique<IndexExpression>();
+    res->token = curToken;
+    res->Left = move(left);
+
+    nextToken();
+    res->Index = parseExpression(LOWEST);
+
+    if (!expectToken(token::RBRACKET)) {
+        return nullptr;
+    }
+
+    return res;
+}
+
+unique_ptr<Expression>
 Parser::parseCallExpression(unique_ptr<Expression> func) {
     auto exp = make_unique<CallExpression>();
     exp->token = curToken;
     exp->Function = move(func);
-    exp->Arguments = parseCallArguments();
+    exp->Arguments = parseExpressionList(token::RPAREN);
 
     return exp;
-}
-
-vector<unique_ptr<Expression>> Parser::parseCallArguments() {
-    vector<unique_ptr<Expression>> args;
-    if (peekTokenIs(token::RPAREN)) {
-        nextToken();
-        return args;
-    }
-
-    nextToken();
-
-    args.push_back(parseExpression(LOWEST));
-
-    while (peekTokenIs(token::COMMA)) {
-        nextToken();
-        nextToken();
-        args.push_back(parseExpression(LOWEST));
-    }
-
-    if (!expectToken(token::RPAREN)) {
-        return args;
-    }
-
-    return args;
 }
 
 unique_ptr<Expression> Parser::parseGroupedExpression() {
@@ -315,6 +339,9 @@ unique_ptr<BlockStatement> Parser::parseBlockStatement() {
             statement->Statements.push_back(move(stmt));
         }
         nextToken();
+    }
+    if (curTokenIs(token::END)) {
+        errors.push_back("expected '}'");
     }
     return statement;
 }

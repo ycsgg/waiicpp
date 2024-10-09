@@ -437,6 +437,53 @@ class FunctionLiteral : public Expression {
     }
 };
 
+class ArrayLiteral : public Expression {
+    public:
+    Token token;
+    vector<unique_ptr<Expression>> Elements;
+
+    public:
+    vector<unique_ptr<Expression>> &elements() {
+        return Elements;
+    }
+    string TokenLiteral() {
+        return token.Literal;
+    }
+    string output() {
+        string res;
+        for (auto &p : Elements) {
+            res += SafeOutput(p.get()) + ",";
+        }
+        res = res.substr(0, res.length() - 1);
+#ifdef DEBUG
+        return format("Array : [{}]", res);
+#else
+        return format("[{}]", res);
+#endif
+    }
+};
+
+class IndexExpression : public Expression {
+    public:
+    Token token;
+    unique_ptr<Expression> Left, Index;
+
+    public:
+    Expression *left() {
+        return Left.get();
+    }
+    Expression *index() {
+        return Index.get();
+    }
+    string TokenLiteral() {
+        return token.Literal;
+    }
+    string output() {
+        return format("({}[{}])", SafeOutput(Left.get()),
+                      SafeOutput(Index.get()));
+    }
+};
+
 class CallExpression : public Expression {
     public:
     Token token;

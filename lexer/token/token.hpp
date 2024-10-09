@@ -40,6 +40,8 @@ enum TokenType {
     RPAREN,
     LBRACE,
     RBRACE,
+    LBRACKET,
+    RBRACKET,
 
     // Keywords
     FUNCTION,
@@ -93,6 +95,10 @@ std::string TypeToSymbol(TokenType type) {
         return "{";
     case RBRACE:
         return "}";
+    case LBRACKET:
+        return "[";
+    case RBRACKET:
+        return "]";
     case FUNCTION:
         return "Function";
     case LET:
@@ -174,6 +180,10 @@ std::string TypeToName(TokenType type) {
         return "LBRACE";
     case RBRACE:
         return "RBRACE";
+    case LBRACKET:
+        return "LBRACKET";
+    case RBRACKET:
+        return "RBRACKET";
     case FUNCTION:
         return "FUNCTION";
     case LET:

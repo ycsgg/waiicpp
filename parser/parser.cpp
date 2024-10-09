@@ -27,7 +27,8 @@ enum Priority {
     SUM,         //+ -
     PRODUCT,     //* /
     PREFIX,      //! -
-    CALL         // invoke
+    CALL,        // invoke
+    INDEX        // []
 };
 
 static unordered_map<token::TokenType, Priority> precedences = {
@@ -39,7 +40,7 @@ static unordered_map<token::TokenType, Priority> precedences = {
     {token::OR, LOGIC},       {token::AND, LOGIC},
     {token::LPAREN, CALL},    {token::ASSIGN, ASSIGN},
     {token::IDENT, PRODUCT},  {token::TRUE, PRODUCT},
-    {token::FALSE, PRODUCT}};
+    {token::FALSE, PRODUCT},  {token::LBRACKET, INDEX}};
 
 class Parser {
     typedef unique_ptr<Expression> (Parser::*prefixParseFunc)();
@@ -97,7 +98,10 @@ class Parser {
     unique_ptr<Expression> parseDoubleLiteral();
     unique_ptr<Expression> parseStringLiteral();
     unique_ptr<Expression> parsePrefixExpression();
+    unique_ptr<Expression> parseArrayLiteral();
+    vector<unique_ptr<Expression>> parseExpressionList(token::TokenType end);
     unique_ptr<Expression> parseInfixExpression(unique_ptr<Expression> left);
+    unique_ptr<Expression> parseIndexExpression(unique_ptr<Expression> left);
     unique_ptr<Expression>
     parseIdentInfixExpression(unique_ptr<Expression> left);
     unique_ptr<Expression> parseGroupedExpression();
@@ -105,7 +109,7 @@ class Parser {
     unique_ptr<Expression> parseFunctionLiteral();
     unique_ptr<Expression> parseCallExpression(unique_ptr<Expression> func);
     vector<shared_ptr<Identifier>> parseParameters();
-    vector<unique_ptr<Expression>> parseCallArguments();
+    // vector<unique_ptr<Expression>> parseCallArguments();
 
     private:
     bool curTokenIs(token::TokenType typ) {

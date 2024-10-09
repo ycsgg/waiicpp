@@ -66,6 +66,8 @@ obj_ptr evalIfExpression(ast::IfExpression *ifexpr, env_ptr env);
 
 obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env);
 
+obj_ptr evalIndexExpression(obj_ptr left, obj_ptr index);
+
 vector<obj_ptr>
 evalExpressions(const vector<unique_ptr<ast::Expression>> &exprs, env_ptr env);
 
@@ -139,6 +141,15 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
         return make_shared<FunctionObject>(_t.res->parameters(), _t.res->body(),
                                            env);
     }
+    if (isType(ast::ArrayLiteral)) {
+        auto elements = evalExpressions(_t.res->elements(), env);
+        return make_shared<Array>(elements);
+    }
+    if (isType(ast::IndexExpression)) {
+        auto left = Eval(_t.res->left(), env);
+        auto index = Eval(_t.res->index(), env);
+        return evalIndexExpression(left, index);
+    }
     if (isType(ast::FunctionStatement)) {
         auto func = make_shared<FunctionObject>(_t.res->parameters(),
                                                 _t.res->body(), env);
@@ -170,20 +181,20 @@ env_ptr extendFunctionEnv(FunctionObject *func, const vector<obj_ptr> &args) {
 }
 
 obj_ptr unwarpReturnValue(obj_ptr obj) {
-    if (type(obj) == Return) {
+    if (type(obj) == Return_Obj) {
         return dynamic_cast<ReturnValue *>(obj.get())->Value;
     }
     return _NULL;
 }
 
 obj_ptr applyFunction(obj_ptr func, const vector<obj_ptr> &args) {
-    if (type(func) == Function) {
+    if (type(func) == Function_Obj) {
         auto function = dynamic_cast<FunctionObject *>(func.get());
         auto env = extendFunctionEnv(function, args);
         auto res = Eval(function->Body.get(), env);
         return unwarpReturnValue(res);
     }
-    if (type(func) == Builtin) {
+    if (type(func) == Builtin_Obj) {
         auto builtin = dynamic_cast<BuiltIn *>(func.get());
         return builtin->Fn(args);
     }
@@ -230,10 +241,10 @@ obj_ptr evalPrograms(const vector<unique_ptr<ast::Statement>> &statements,
     for (auto &stmt : statements) {
         res = Eval(stmt.get(), env);
         if (res != nullptr) {
-            if (type(res) == Return) {
+            if (type(res) == Return_Obj) {
                 return dynamic_cast<ReturnValue *>(res.get())->Value;
             }
-            if (type(res) == Error) {
+            if (type(res) == Error_Obj) {
                 return res;
             }
         }
@@ -248,10 +259,10 @@ obj_ptr evalStatements(const vector<unique_ptr<ast::Statement>> &statements,
     for (auto &stmt : statements) {
         res = Eval(stmt.get(), env);
         if (res != nullptr) {
-            if (type(res) == Return) {
+            if (type(res) == Return_Obj) {
                 return res;
             }
-            if (type(res) == Error) {
+            if (type(res) == Error_Obj) {
                 return res;
             }
         }
@@ -352,34 +363,34 @@ obj_ptr evalCalcExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
     if (isCalcType(left) && isCalcType(right)) {
         auto typeLeft = type(left);
         auto typeRight = type(right);
-        if (typeLeft == Float) {
+        if (typeLeft == Float_Obj) {
             auto valLeft = getValue<Double>(left);
-            if (typeRight == Float) {
+            if (typeRight == Float_Obj) {
                 auto valRight = getValue<Double>(right);
                 return make_shared<Double>(
                     _calcFunction(typ, valLeft, valRight));
             }
-            if (typeRight == Int) {
+            if (typeRight == Int_Obj) {
                 auto valRight = getValue<Integer>(right);
                 return make_shared<Double>(
                     _calcFunction(typ, valLeft, valRight));
             }
         }
-        if (typeLeft == Int) {
+        if (typeLeft == Int_Obj) {
             auto valLeft = getValue<Integer>(left);
-            if (typeRight == Float) {
+            if (typeRight == Float_Obj) {
                 auto valRight = getValue<Double>(right);
                 return make_shared<Double>(
                     _calcFunction(typ, valLeft, valRight));
             }
-            if (typeRight == Int) {
+            if (typeRight == Int_Obj) {
                 auto valRight = getValue<Integer>(right);
                 return make_shared<Integer>(
                     _calcFunction(typ, valLeft, valRight));
             }
         }
     }
-    if (type(left) == Str && type(right) == Str) {
+    if (type(left) == Str_Obj && type(right) == Str_Obj) {
         auto valLeft = getValue<String>(left);
         auto valRight = getValue<String>(right);
         if (typ == token::PLUS) {
@@ -394,30 +405,30 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
     auto typLeft = type(left);
     auto typRight = type(right);
     auto func = [&](auto valLeft) -> obj_ptr {
-        if (typRight == Float) {
+        if (typRight == Float_Obj) {
             auto valRight = getValue<Double>(right);
             return make_shared<Boolean>(_logicFunction(typ, valLeft, valRight));
         }
-        if (typRight == Int) {
+        if (typRight == Int_Obj) {
             auto valRight = getValue<Integer>(right);
             return make_shared<Boolean>(_logicFunction(typ, valLeft, valRight));
         }
-        if (typRight == Bool) {
+        if (typRight == Bool_Obj) {
             auto valRight = getValue<Boolean>(right);
             return make_shared<Boolean>(_logicFunction(typ, valLeft, valRight));
         }
         throw newError("type mismatch: {} {} {}", TypeToString(type(left)),
                        token::TypeToSymbol(typ), TypeToString(type(right)));
     };
-    if (typLeft == Float) {
+    if (typLeft == Float_Obj) {
         auto valLeft = getValue<Double>(left);
         return func(valLeft);
     }
-    if (typLeft == Int) {
+    if (typLeft == Int_Obj) {
         auto valLeft = getValue<Integer>(left);
         return func(valLeft);
     }
-    if (typLeft == Bool) {
+    if (typLeft == Bool_Obj) {
         auto valLeft = getValue<Boolean>(left);
         return func(valLeft);
     }
@@ -427,13 +438,13 @@ obj_ptr evalLogicExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
 
 bool isTrue(obj_ptr obj) {
     switch (type(obj)) {
-    case _Null:
+    case Null_Obj:
         return false;
-    case Bool:
+    case Bool_Obj:
         return getValue<Boolean>(obj);
-    case Int:
+    case Int_Obj:
         return getValue<Integer>(obj);
-    case Float:
+    case Float_Obj:
         return getValue<Double>(obj);
     default:
         return false;
@@ -455,5 +466,18 @@ void evalWhileStatement(ast::WhileStatement *whilestmt, env_ptr env) {
     while (isTrue(Eval(whilestmt->condition(), env))) {
         Eval(whilestmt->body(), env);
     }
+}
+
+obj_ptr evalIndexExpression(obj_ptr left, obj_ptr index) {
+    if (type(left) == Array_Obj && type(index) == Int_Obj) {
+        auto arr = dynamic_cast<Array *>(left.get());
+        auto idx = getValue<Integer>(index);
+        if (idx < 0 || idx >= arr->Elements.size()) {
+            throw newError("index out of range: {}", idx);
+        }
+        return arr->Elements[idx];
+    }
+    throw newError("index operator not supported: {} {}",
+                   TypeToString(type(left)), TypeToString(type(index)));
 }
 } // namespace eval

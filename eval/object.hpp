@@ -9,27 +9,38 @@ namespace object {
 using std::format;
 using std::shared_ptr;
 using std::string;
-enum Type { _Null, Int, Float, Bool, Return, Error, Function, Str, Builtin };
+enum Type {
+    Null_Obj,
+    Int_Obj,
+    Float_Obj,
+    Bool_Obj,
+    Return_Obj,
+    Error_Obj,
+    Function_Obj,
+    Str_Obj,
+    Builtin_Obj,
+    Array_Obj
+};
 
 string TypeToString(Type t) {
     switch (t) {
-    case _Null:
+    case Null_Obj:
         return "null";
-    case Int:
+    case Int_Obj:
         return "int";
-    case Float:
+    case Float_Obj:
         return "float";
-    case Bool:
+    case Bool_Obj:
         return "bool";
-    case Str:
+    case Str_Obj:
         return "str";
-    case Return:
+    case Return_Obj:
         return "return";
-    case Error:
+    case Error_Obj:
         return "error";
-    case Function:
+    case Function_Obj:
         return "function";
-    case Builtin:
+    case Builtin_Obj:
         return "builtin";
     default:
         return "unknown";

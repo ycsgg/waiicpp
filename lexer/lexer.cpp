@@ -149,6 +149,12 @@ class Lexer {
         case '\"':
             setToken(TokenType::STRING, readString());
             break;
+        case '[':
+            setToken(TokenType::LBRACKET, "[");
+            break;
+        case ']':
+            setToken(TokenType::RBRACKET, "]");
+            break;
         case 0:
             setToken(TokenType::END, "");
             break;

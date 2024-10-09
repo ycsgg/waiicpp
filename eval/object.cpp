@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-
 namespace object {
 
 using std::format;
@@ -23,7 +22,7 @@ class Integer : public Object {
     Integer(int val) : Value(val) {
     }
     Type ObjectType() {
-        return Int;
+        return Int_Obj;
     }
     string Inspect() {
         return format("{}", Value);
@@ -40,7 +39,7 @@ class Boolean : public Object {
     Boolean(bool val) : Value(val) {
     }
     Type ObjectType() {
-        return Bool;
+        return Bool_Obj;
     }
     string Inspect() {
         return format("{}", Value);
@@ -58,7 +57,7 @@ class Double : public Object {
     Double(double val) : Value(val) {
     }
     Type ObjectType() {
-        return Float;
+        return Float_Obj;
     }
     string Inspect() {
         return format("{}", Value);
@@ -73,7 +72,7 @@ class String : public Object {
     String(string val) : Value(val) {
     }
     Type ObjectType() {
-        return Str;
+        return Str_Obj;
     }
     string Inspect() {
         return "\"" + Value + "\"";
@@ -90,7 +89,7 @@ class BuiltIn : public Object {
     BuiltIn(BuiltinFunction fn) : Fn(fn) {
     }
     Type ObjectType() {
-        return Builtin;
+        return Builtin_Obj;
     }
     string Inspect() {
         return "builtin function";
@@ -100,7 +99,7 @@ class BuiltIn : public Object {
 class Null : public Object {
     public:
     Type ObjectType() {
-        return _Null;
+        return Null_Obj;
     }
     string Inspect() {
         return "null";
@@ -111,7 +110,7 @@ class ReturnValue : public Object {
     public:
     shared_ptr<Object> Value;
     Type ObjectType() {
-        return Return;
+        return Return_Obj;
     }
     string Inspect() {
         return Value->Inspect();
@@ -124,7 +123,7 @@ class ErrorObject : public Object {
     public:
     string Message;
     Type ObjectType() {
-        return Error;
+        return Error_Obj;
     }
     string Inspect() {
         return "Error: " + Message;
@@ -140,7 +139,7 @@ class FunctionObject : public Object {
     environment::env_ptr Env;
 
     Type ObjectType() {
-        return Function;
+        return Function_Obj;
     }
 
     string shortInspect() {
@@ -174,6 +173,29 @@ class FunctionObject : public Object {
     }
 };
 
+class Array : public Object {
+    public:
+    std::vector<shared_ptr<Object>> Elements;
+
+    Type ObjectType() {
+        return Array_Obj;
+    }
+
+    string Inspect() {
+        std::string res;
+        for (auto &p : Elements) {
+            res += p->Inspect() + ",";
+        }
+        if (!res.empty()) {
+            res.pop_back();
+        }
+        return format("[{}]", res);
+    }
+
+    Array(std::vector<shared_ptr<Object>> elements) : Elements(elements) {
+    }
+};
+
 template <typename... Args>
 ErrorObject newError(const string &fmt, Args... args) {
     return ErrorObject(std::vformat(fmt, std::make_format_args(args...)));
@@ -197,17 +219,17 @@ auto getValue(shared_ptr<Object> obj) {
 
 bool isCalcType(obj_ptr obj) {
     auto typ = type(obj);
-    return typ == Int || typ == Float;
+    return typ == Int_Obj || typ == Float_Obj;
 }
 
 Type resultCalcType(Type Left, Type Right) {
-    if (Left == Float || Right == Float) {
-        return Float;
+    if (Left == Float_Obj || Right == Float_Obj) {
+        return Float_Obj;
     }
-    if (Left == Int || Right == Int) {
-        return Int;
+    if (Left == Int_Obj || Right == Int_Obj) {
+        return Int_Obj;
     }
-    return Int;
+    return Int_Obj;
 }
 
 } // namespace object
