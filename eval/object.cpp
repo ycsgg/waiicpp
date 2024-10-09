@@ -4,8 +4,10 @@
 #include "../ast/ast.cpp"
 #include "env.cpp"
 #include <format>
+#include <functional>
 #include <memory>
 #include <string>
+
 
 namespace object {
 
@@ -75,6 +77,23 @@ class String : public Object {
     }
     string Inspect() {
         return "\"" + Value + "\"";
+    }
+};
+
+using BuiltinFunction = std::function<obj_ptr(const std::vector<obj_ptr> &)>;
+
+class BuiltIn : public Object {
+    public:
+    BuiltinFunction Fn;
+
+    public:
+    BuiltIn(BuiltinFunction fn) : Fn(fn) {
+    }
+    Type ObjectType() {
+        return Builtin;
+    }
+    string Inspect() {
+        return "builtin function";
     }
 };
 

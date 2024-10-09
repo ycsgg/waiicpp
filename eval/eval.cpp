@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ast/ast.cpp"
+#include "./builtin.cpp"
 #include "./env.cpp"
 #include "./object.cpp"
 #include <format>
@@ -182,6 +183,10 @@ obj_ptr applyFunction(obj_ptr func, const vector<obj_ptr> &args) {
         auto res = Eval(function->Body.get(), env);
         return unwarpReturnValue(res);
     }
+    if (type(func) == Builtin) {
+        auto builtin = dynamic_cast<BuiltIn *>(func.get());
+        return builtin->Fn(args);
+    }
     throw newError("not a function: {}", TypeToString(type(func)));
 }
 
@@ -198,6 +203,9 @@ obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env) {
     auto [ok, val] = env->get(ident->value);
     if (ok) {
         return val;
+    }
+    if (BUILTINS.count(ident->value)) {
+        return std::make_shared<BuiltIn>(BUILTINS[ident->value]);
     }
     throw newError("identifier not found: {}", ident->value);
 }

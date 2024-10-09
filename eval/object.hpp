@@ -9,7 +9,7 @@ namespace object {
 using std::format;
 using std::shared_ptr;
 using std::string;
-enum Type { _Null, Int, Float, Bool, Return, Error, Function, Str };
+enum Type { _Null, Int, Float, Bool, Return, Error, Function, Str, Builtin };
 
 string TypeToString(Type t) {
     switch (t) {
@@ -29,6 +29,8 @@ string TypeToString(Type t) {
         return "error";
     case Function:
         return "function";
+    case Builtin:
+        return "builtin";
     default:
         return "unknown";
     }
