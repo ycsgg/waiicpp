@@ -309,6 +309,24 @@ class BooleanLiteral : public Expression {
     }
 };
 
+class StringLiteral : public Expression {
+    public:
+    Token token;
+    string value;
+
+    public:
+    string TokenLiteral() {
+        return token.Literal;
+    }
+    string output() {
+#ifdef DEBUG
+        return format("String:\"{}\"", value);
+#else
+        return format("\"{}\"", value);
+#endif
+    }
+};
+
 class PrefixExpression : public Expression {
     public:
     Token token;

@@ -95,6 +95,7 @@ class Parser {
     unique_ptr<Expression> parseIntegerLiteral();
     unique_ptr<Expression> parseBooleanLiteral();
     unique_ptr<Expression> parseDoubleLiteral();
+    unique_ptr<Expression> parseStringLiteral();
     unique_ptr<Expression> parsePrefixExpression();
     unique_ptr<Expression> parseInfixExpression(unique_ptr<Expression> left);
     unique_ptr<Expression>

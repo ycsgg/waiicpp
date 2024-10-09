@@ -13,6 +13,7 @@ enum TokenType {
     IDENT,
     INT,
     DOUBLE,
+    STRING,
 
     // Operators
     ASSIGN,
@@ -110,6 +111,8 @@ std::string TypeToSymbol(TokenType type) {
         return "Int";
     case DOUBLE:
         return "Double";
+    case STRING:
+        return "String";
     case LE:
         return "<=";
     case GE:
@@ -189,6 +192,8 @@ std::string TypeToName(TokenType type) {
         return "INT";
     case DOUBLE:
         return "DOUBLE";
+    case STRING:
+        return "STRING";
     case LE:
         return "LE";
     case GE:

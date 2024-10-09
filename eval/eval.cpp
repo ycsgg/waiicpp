@@ -98,6 +98,9 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
     if (isType(ast::BooleanLiteral)) {
         return _t.res->value ? _TRUE : _FALSE;
     }
+    if (isType(ast::StringLiteral)) {
+        return make_shared<String>(_t.res->value);
+    }
 
     if (isType(ast::PrefixExpression)) {
         auto right = Eval(_t.res->right(), env);
@@ -366,6 +369,13 @@ obj_ptr evalCalcExpression(token::TokenType typ, obj_ptr left, obj_ptr right) {
                 return make_shared<Integer>(
                     _calcFunction(typ, valLeft, valRight));
             }
+        }
+    }
+    if (type(left) == Str && type(right) == Str) {
+        auto valLeft = getValue<String>(left);
+        auto valRight = getValue<String>(right);
+        if (typ == token::PLUS) {
+            return make_shared<String>(valLeft + valRight);
         }
     }
     throw newError("type mismatch: {} {} {}", TypeToString(type(left)),

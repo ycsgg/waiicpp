@@ -63,6 +63,21 @@ class Double : public Object {
     }
 };
 
+class String : public Object {
+    public:
+    string Value;
+
+    public:
+    String(string val) : Value(val) {
+    }
+    Type ObjectType() {
+        return Str;
+    }
+    string Inspect() {
+        return "\"" + Value + "\"";
+    }
+};
+
 class Null : public Object {
     public:
     Type ObjectType() {

@@ -15,6 +15,7 @@ void Parser::registerAll() {
     registerPrefixFunc(token::IDENT, parseIdentifier);
     registerPrefixFunc(token::INT, parseIntegerLiteral);
     registerPrefixFunc(token::DOUBLE, parseDoubleLiteral);
+    registerPrefixFunc(token::STRING, parseStringLiteral);
     registerPrefixFunc(token::MINUS, parsePrefixExpression);
     registerPrefixFunc(token::BANG, parsePrefixExpression);
     registerPrefixFunc(token::NOT, parsePrefixExpression);
@@ -78,6 +79,13 @@ unique_ptr<Expression> Parser::parseDoubleLiteral() {
 
     res->value = val;
 
+    return res;
+}
+
+unique_ptr<Expression> Parser::parseStringLiteral() {
+    auto res = make_unique<StringLiteral>();
+    res->token = curToken;
+    res->value = curToken.Literal;
     return res;
 }
 

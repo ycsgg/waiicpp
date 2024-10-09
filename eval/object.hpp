@@ -4,13 +4,12 @@
 #include <memory>
 #include <string>
 
-
 namespace object {
 
 using std::format;
 using std::shared_ptr;
 using std::string;
-enum Type { _Null, Int, Float, Bool, Return, Error, Function };
+enum Type { _Null, Int, Float, Bool, Return, Error, Function, Str };
 
 string TypeToString(Type t) {
     switch (t) {
@@ -22,6 +21,8 @@ string TypeToString(Type t) {
         return "float";
     case Bool:
         return "bool";
+    case Str:
+        return "str";
     case Return:
         return "return";
     case Error:

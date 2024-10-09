@@ -68,6 +68,14 @@ class Lexer {
         // std::cerr << start << " " << position << std::endl;
         return input.substr(start, position - start);
     }
+    string readString() {
+        auto start = position + 1;
+        readChar();
+        while (ch != '\"' && ch != 0) {
+            readChar();
+        }
+        return input.substr(start, position - start);
+    }
     Token NextToken() {
         Token res;
         skipWhitespace();
@@ -137,6 +145,9 @@ class Lexer {
             } else {
                 setToken(TokenType::BANG, "!");
             }
+            break;
+        case '\"':
+            setToken(TokenType::STRING, readString());
             break;
         case 0:
             setToken(TokenType::END, "");
