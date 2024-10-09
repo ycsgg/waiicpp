@@ -287,6 +287,8 @@ unique_ptr<Statement> Parser::parseStatement() {
         return parseFunctionStatement();
     case token::FOR:
         return parseForStatement();
+    case token::WHILE:
+        return parseWhileStatement();
     case token::LBRACE:
         return parseBlockStatement();
     default:
@@ -326,7 +328,7 @@ unique_ptr<LetStatement> Parser::parseLetStatement() {
 
     statement->Value = parseExpression(LOWEST);
 
-    while (!curTokenIs(token::SEMICOLON) && !curTokenIs(token::END)) {
+    while (peekTokenIs(token::SEMICOLON)) {
         nextToken();
     }
 
@@ -340,7 +342,7 @@ unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 
     statement->ReturnValue = parseExpression(LOWEST);
 
-    while (!curTokenIs(token::SEMICOLON) && !curTokenIs(token::END)) {
+    while (peekTokenIs(token::SEMICOLON)) {
         nextToken();
     }
     return statement;
@@ -352,37 +354,60 @@ unique_ptr<ForStatement> Parser::parseForStatement() {
     if (!expectToken(token::LPAREN)) {
         return nullptr;
     }
-    nextToken();
+    if (!expectToken(token::IDENT)) {
+        return nullptr;
+    }
+    statement->Name = std::make_shared<Identifier>(curToken, curToken.Literal);
 
-    if (!curTokenIs(token::SEMICOLON)) {
-        statement->Init = parseExpression(LOWEST);
-        if (!expectToken(token::SEMICOLON)) {
-            return nullptr;
-        }
+    if (!expectToken(token::IN)) {
+        return nullptr;
     }
     nextToken();
-
-    if (curTokenIs(token::SEMICOLON)) {
-        statement->Condition = _FALSE;
-    } else {
-        statement->Condition = parseExpression(LOWEST);
-        if (!expectToken(token::SEMICOLON)) {
-            return nullptr;
-        }
-    }
-
-    if (!peekTokenIs(token::RPAREN)) {
-        nextToken();
-        statement->PostAction = parseExpression(LOWEST);
-    }
+    statement->Range = parseExpression(LOWEST);
 
     if (!expectToken(token::RPAREN)) {
         return nullptr;
     }
+
     if (!expectToken(token::LBRACE)) {
         return nullptr;
     }
     statement->Body = parseBlockStatement();
+
+    while (peekTokenIs(token::SEMICOLON)) {
+        nextToken();
+    }
+
+    return statement;
+}
+
+unique_ptr<WhileStatement> Parser::parseWhileStatement() {
+    auto statement = make_unique<WhileStatement>();
+    statement->token = curToken;
+    if (!expectToken(token::LPAREN)) {
+        return nullptr;
+    }
+
+    nextToken();
+
+    statement->Condition = parseExpression(LOWEST);
+
+    if (!expectToken(token::RPAREN)) {
+        return nullptr;
+    }
+
+    if (!expectToken(token::LBRACE)) {
+        return nullptr;
+    }
+
+    statement->Body = parseBlockStatement();
+
+    // std::cout << "Current token: " << token::TypeToName(curToken.Type) <<
+    // std::endl;
+
+    while (peekTokenIs(token::SEMICOLON)) {
+        nextToken();
+    }
 
     return statement;
 }
@@ -444,6 +469,10 @@ unique_ptr<FunctionStatement> Parser::parseFunctionStatement() {
     }
 
     statement->Body = parseBlockStatement();
+
+    while (peekTokenIs(token::SEMICOLON)) {
+        nextToken();
+    }
 
     return statement;
 }

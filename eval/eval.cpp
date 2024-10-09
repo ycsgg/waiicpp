@@ -68,11 +68,16 @@ obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env);
 vector<obj_ptr>
 evalExpressions(const vector<unique_ptr<ast::Expression>> &exprs, env_ptr env);
 
+void evalWhileStatement(ast::WhileStatement *whilestmt, env_ptr env);
+
 obj_ptr applyFunction(obj_ptr func, const vector<obj_ptr> &args);
 
 obj_ptr Eval(ast::Node *node, env_ptr env) {
 
 #define isType(typ) auto _t = _isType<typ>(node)
+    if (node == nullptr) {
+        return _NULL;
+    }
 
     if (isType(ast::Program)) {
         return evalPrograms(_t.res->statements(), env);
@@ -119,6 +124,10 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
         env->set(_t.res->name()->value, val);
         return nullptr;
     }
+    if (isType(ast::WhileStatement)) {
+        evalWhileStatement(_t.res, env);
+        return nullptr;
+    }
     if (isType(ast::Identifier)) {
         return evalIdentifer(_t.res, env);
     }
@@ -147,7 +156,8 @@ env_ptr extendFunctionEnv(FunctionObject *func, const vector<obj_ptr> &args) {
     env_ptr env = make_shared<Enviroment>(func->Env);
     if (func->Parameters.size() != args.size()) {
         throw newError("function {} expected {} arguments, got {}",
-                       func->shortInspect(), func->Parameters.size(), args.size());
+                       func->shortInspect(), func->Parameters.size(),
+                       args.size());
     }
     for (size_t i = 0; i < func->Parameters.size(); i++) {
         env->set(func->Parameters[i]->value, args[i]);
@@ -423,4 +433,9 @@ obj_ptr evalIfExpression(ast::IfExpression *ifexpr, env_ptr env) {
     }
 }
 
+void evalWhileStatement(ast::WhileStatement *whilestmt, env_ptr env) {
+    while (isTrue(Eval(whilestmt->condition(), env))) {
+        Eval(whilestmt->body(), env);
+    }
+}
 } // namespace eval

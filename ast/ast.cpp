@@ -230,29 +230,25 @@ class ForStatement : public Statement {
     public:
     Token token;
     unique_ptr<BlockStatement> Body;
-    shared_ptr<Expression> Condition;
-    unique_ptr<Expression> Init, PostAction;
+    shared_ptr<Identifier> Name;
+    shared_ptr<Expression> Range;
 
     public:
     BlockStatement *body() {
         return Body.get();
     }
-    Expression *condition() {
-        return Condition.get();
+    Identifier *name() {
+        return Name.get();
     }
-    Expression *init() {
-        return Init.get();
-    }
-    Expression *postAction() {
-        return PostAction.get();
+    Expression *range() {
+        return Range.get();
     }
     string TokenLiteral() {
         return token.Literal;
     }
     string output() {
-        return format("for({};{};{}){{{}}}", SafeOutput(Init.get()),
-                      SafeOutput(Condition.get()), SafeOutput(PostAction.get()),
-                      SafeOutput(Body.get()));
+        return format("for({} in {}){{{}}}", SafeOutput(Name.get()),
+                      SafeOutput(Range.get()), SafeOutput(Body.get()));
     }
 };
 
@@ -381,9 +377,9 @@ class IfExpression : public Expression {
     }
     string output() {
 #ifdef DEBUG
-        return format("IF:{}\n    TRUE->{}\n    FALSE->{}",
-                      SafeOutput(Condition.get()), SafeOutput(Consequence.get()),
-                      SafeOutput(Alternative.get()));
+        return format(
+            "IF:{}\n    TRUE->{}\n    FALSE->{}", SafeOutput(Condition.get()),
+            SafeOutput(Consequence.get()), SafeOutput(Alternative.get()));
 #else
         return format("if({}){{{}}}else{{{}}}", SafeOutput(Condition.get()),
                       SafeOutput(Consequence.get()),
@@ -445,11 +441,33 @@ class CallExpression : public Expression {
             res += SafeOutput(p.get()) + ",";
         }
         res = res.substr(0, res.length() - 1);
-        #ifdef DEBUG
+#ifdef DEBUG
         return format("Call : {}({})", SafeOutput(Function.get()), res);
-        #else
+#else
         return format("{}({})", SafeOutput(Function.get()), res);
-        #endif
+#endif
+    }
+};
+
+class WhileStatement : public Statement {
+    public:
+    Token token;
+    shared_ptr<Expression> Condition;
+    unique_ptr<BlockStatement> Body;
+
+    public:
+    Expression *condition() {
+        return Condition.get();
+    }
+    BlockStatement *body() {
+        return Body.get();
+    }
+    string TokenLiteral() {
+        return token.Literal;
+    }
+    string output() {
+        return format("while({}){{{}}}", SafeOutput(Condition.get()),
+                      SafeOutput(Body.get()));
     }
 };
 } // namespace ast

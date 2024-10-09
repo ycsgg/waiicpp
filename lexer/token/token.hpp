@@ -52,7 +52,8 @@ enum TokenType {
     AND,
     NOT,
     FOR,
-    IN
+    IN,
+    WHILE
 };
 
 std::string TypeToSymbol(TokenType type) {
@@ -127,6 +128,8 @@ std::string TypeToSymbol(TokenType type) {
         return "For";
     case IN:
         return "In";
+    case WHILE:
+        return "While";
     default:
         return "None";
     }
@@ -202,6 +205,8 @@ std::string TypeToName(TokenType type) {
         return "NOT";
     case FOR:
         return "FOR";
+    case WHILE:
+        return "WHILE";
     case IN:
         return "IN";
     default:
@@ -220,7 +225,8 @@ struct Token {
 static std::map<std::string, TokenType> keywords = {
     {"fn", FUNCTION}, {"let", LET},   {"true", TRUE},     {"false", FALSE},
     {"if", IF},       {"else", ELSE}, {"return", RETURN}, {"or", OR},
-    {"and", AND},     {"not", NOT},   {"for", FOR},       {"in", IN}};
+    {"and", AND},     {"not", NOT},   {"for", FOR},       {"in", IN},
+    {"while", WHILE}};
 
 Token newToken(TokenType Type, std::string Literal) {
     Token res;

@@ -89,6 +89,7 @@ class Parser {
     unique_ptr<ExpressionStatement> parseExpressionStatement();
     unique_ptr<FunctionStatement> parseFunctionStatement();
     unique_ptr<ForStatement> parseForStatement();
+    unique_ptr<WhileStatement> parseWhileStatement();
     unique_ptr<Expression> parseExpression(Priority pri);
     unique_ptr<Expression> parseIdentifier();
     unique_ptr<Expression> parseIntegerLiteral();
