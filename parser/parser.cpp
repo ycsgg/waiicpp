@@ -97,6 +97,7 @@ class Parser {
     unique_ptr<Expression> parseBooleanLiteral();
     unique_ptr<Expression> parseDoubleLiteral();
     unique_ptr<Expression> parseStringLiteral();
+    unique_ptr<Expression> parseHashLiteral();
     unique_ptr<Expression> parsePrefixExpression();
     unique_ptr<Expression> parseArrayLiteral();
     vector<unique_ptr<Expression>> parseExpressionList(token::TokenType end);
@@ -109,6 +110,7 @@ class Parser {
     unique_ptr<Expression> parseFunctionLiteral();
     unique_ptr<Expression> parseCallExpression(unique_ptr<Expression> func);
     vector<shared_ptr<Identifier>> parseParameters();
+    vector<std::pair<unique_ptr<Expression>, unique_ptr<Expression>>> parseHashPairs();
     // vector<unique_ptr<Expression>> parseCallArguments();
 
     private:

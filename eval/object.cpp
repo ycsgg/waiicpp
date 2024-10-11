@@ -14,7 +14,7 @@ using std::format;
 using std::shared_ptr;
 using std::string;
 
-class Integer : public Object {
+class Integer : public Object, public Hasher {
     public:
     int Value;
 
@@ -27,9 +27,12 @@ class Integer : public Object {
     string Inspect() {
         return format("{}", Value);
     }
+    size_t hash() {
+        return std::hash<int>{}(Value);
+    }
 };
 
-class Boolean : public Object {
+class Boolean : public Object, public Hasher {
     public:
     bool Value;
 
@@ -44,12 +47,15 @@ class Boolean : public Object {
     string Inspect() {
         return format("{}", Value);
     }
+    size_t hash() {
+        return std::hash<bool>{}(Value);
+    }
 };
 
 static shared_ptr<Boolean> _TRUE = std::make_shared<Boolean>(true);
 static shared_ptr<Boolean> _FALSE = std::make_shared<Boolean>(false);
 
-class Double : public Object {
+class Double : public Object, public Hasher {
     public:
     double Value;
 
@@ -62,9 +68,12 @@ class Double : public Object {
     string Inspect() {
         return format("{}", Value);
     }
+    size_t hash() {
+        return std::hash<double>{}(Value);
+    }
 };
 
-class String : public Object {
+class String : public Object, public Hasher {
     public:
     string Value;
 
@@ -76,6 +85,9 @@ class String : public Object {
     }
     string Inspect() {
         return "\"" + Value + "\"";
+    }
+    size_t hash() {
+        return std::hash<string>{}(Value);
     }
 };
 
@@ -106,6 +118,8 @@ class Null : public Object {
     }
 };
 
+static shared_ptr<Null> _NULL = std::make_shared<Null>();
+
 class ReturnValue : public Object {
     public:
     shared_ptr<Object> Value;
@@ -131,6 +145,11 @@ class ErrorObject : public Object {
     ErrorObject(string msg) : Message(msg) {
     }
 };
+
+template <typename... Args>
+ErrorObject newError(const string &fmt, Args... args) {
+    return ErrorObject(std::vformat(fmt, std::make_format_args(args...)));
+}
 
 class FunctionObject : public Object {
     public:
@@ -196,12 +215,50 @@ class Array : public Object {
     }
 };
 
-template <typename... Args>
-ErrorObject newError(const string &fmt, Args... args) {
-    return ErrorObject(std::vformat(fmt, std::make_format_args(args...)));
-}
+class Hash : public Object {
+    using Pair = std::pair<std::shared_ptr<Object>, std::shared_ptr<Object>>;
+    std::unordered_map<size_t, Pair> pairs;
 
-static shared_ptr<Null> _NULL = std::make_shared<Null>();
+    public:
+    Hash() {
+    }
+    string Inspect() {
+        std::string res;
+        for (auto &p : pairs) {
+            res += p.second.first->Inspect() + ":" +
+                   p.second.second->Inspect() + ",";
+        }
+        if (!res.empty()) {
+            res.pop_back();
+        }
+        return format("{{{}}}", res);
+    }
+    Type ObjectType() {
+        return Hash_Obj;
+    }
+    obj_ptr get(obj_ptr obj) const {
+        auto hasher = dynamic_cast<Hasher *>(obj.get());
+        if (hasher == nullptr) {
+            throw newError("unusable as hash key: {}",
+                           TypeToString(obj->ObjectType()));
+        }
+        auto hashcode = hasher->hash();
+        auto it = pairs.find(hashcode);
+        if (it == pairs.end()) {
+            return _NULL;
+        }
+        return it->second.second;
+    }
+    bool insert(obj_ptr &key, obj_ptr &val) {
+        auto hasher = dynamic_cast<Hasher *>(key.get());
+        if (hasher == nullptr) {
+            throw newError("unusable as hash key: {}",
+                           TypeToString(key->ObjectType()));
+        }
+        pairs[hasher->hash()] = std::make_pair(key, val);
+        return true;
+    }
+};
 
 template <typename T>
 bool _isType(obj_ptr obj) {

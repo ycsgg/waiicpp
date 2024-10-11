@@ -25,6 +25,7 @@ void Parser::registerAll() {
     registerPrefixFunc(token::IF, parseIfExpression);
     registerPrefixFunc(token::LBRACKET, parseArrayLiteral);
     registerPrefixFunc(token::FUNCTION, parseFunctionLiteral);
+    registerPrefixFunc(token::LBRACE, parseHashLiteral);
 
     // Infix
     registerInfixFunc(token::AND, parseInfixExpression);
@@ -94,6 +95,41 @@ unique_ptr<Expression> Parser::parseBooleanLiteral() {
     auto res = make_unique<BooleanLiteral>();
     res->token = curToken;
     res->value = curTokenIs(token::TRUE);
+    return res;
+}
+
+vector<std::pair<unique_ptr<Expression>, unique_ptr<Expression>>>
+Parser::parseHashPairs() {
+    vector<std::pair<unique_ptr<Expression>, unique_ptr<Expression>>> pairs;
+
+    while (!peekTokenIs(token::RBRACE)) {
+        nextToken();
+        auto key = parseExpression(LOWEST);
+
+        if (!expectToken(token::COLON)) {
+            return pairs;
+        }
+
+        nextToken();
+        auto value = parseExpression(LOWEST);
+
+        pairs.emplace_back(std::make_pair(move(key), move(value)));
+
+        if (!peekTokenIs(token::RBRACE) && !expectToken(token::COMMA)) {
+            return pairs;
+        }
+    }
+    if (!expectToken(token::RBRACE)) {
+        return pairs;
+    }
+
+    return pairs;
+}
+
+unique_ptr<Expression> Parser::parseHashLiteral() {
+    auto res = make_unique<HashLiteral>();
+    res->token = curToken;
+    res->pairs = move(parseHashPairs());
     return res;
 }
 

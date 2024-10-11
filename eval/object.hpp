@@ -19,7 +19,8 @@ enum Type {
     Function_Obj,
     Str_Obj,
     Builtin_Obj,
-    Array_Obj
+    Array_Obj,
+    Hash_Obj
 };
 
 string TypeToString(Type t) {
@@ -42,6 +43,10 @@ string TypeToString(Type t) {
         return "function";
     case Builtin_Obj:
         return "builtin";
+    case Array_Obj:
+        return "array";
+    case Hash_Obj:
+        return "hash";
     default:
         return "unknown";
     }
@@ -53,5 +58,11 @@ class Object {
     virtual string Inspect() = 0;
 };
 
+class Hasher {
+    public:
+    virtual size_t hash() = 0;
+};
+
 typedef shared_ptr<Object> obj_ptr;
+
 } // namespace object

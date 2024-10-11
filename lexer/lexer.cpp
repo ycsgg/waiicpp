@@ -155,6 +155,9 @@ class Lexer {
         case ']':
             setToken(TokenType::RBRACKET, "]");
             break;
+        case ':':
+            setToken(TokenType::COLON, ":");
+            break;
         case 0:
             setToken(TokenType::END, "");
             break;

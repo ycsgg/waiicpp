@@ -35,6 +35,7 @@ enum TokenType {
     // Delimiters
     COMMA,
     SEMICOLON,
+    COLON,
 
     LPAREN,
     RPAREN,
@@ -87,6 +88,8 @@ std::string TypeToSymbol(TokenType type) {
         return ",";
     case SEMICOLON:
         return ";";
+    case COLON:
+        return ":";
     case LPAREN:
         return "(";
     case RPAREN:
@@ -172,6 +175,8 @@ std::string TypeToName(TokenType type) {
         return "COMMA";
     case SEMICOLON:
         return "SEMICOLON";
+    case COLON:
+        return "COLON";
     case LPAREN:
         return "LPAREN";
     case RPAREN:

@@ -327,6 +327,33 @@ class StringLiteral : public Expression {
     }
 };
 
+class HashLiteral : public Expression {
+    public:
+    Token token;
+    vector<std::pair<unique_ptr<Expression>, unique_ptr<Expression>>> pairs;
+
+    public:
+    string TokenLiteral() {
+        return token.Literal;
+    }
+    string output() {
+#ifdef DEBUG
+        string res = "Hash : {";
+#else
+        string res = "{";
+#endif
+        for (auto &p : pairs) {
+            res += SafeOutput(p.first.get()) + ":" +
+                   SafeOutput(p.second.get()) + ",";
+        }
+        if (!pairs.empty()) {
+            res.pop_back();
+        }
+        res += "}";
+        return res;
+    }
+};
+
 class PrefixExpression : public Expression {
     public:
     Token token;

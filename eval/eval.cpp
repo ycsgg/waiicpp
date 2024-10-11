@@ -68,6 +68,8 @@ obj_ptr evalIdentifer(ast::Identifier *ident, env_ptr env);
 
 obj_ptr evalIndexExpression(obj_ptr left, obj_ptr index);
 
+obj_ptr evalHashLiteral(ast::HashLiteral *hash, env_ptr env);
+
 vector<obj_ptr>
 evalExpressions(const vector<unique_ptr<ast::Expression>> &exprs, env_ptr env);
 
@@ -160,6 +162,9 @@ obj_ptr Eval(ast::Node *node, env_ptr env) {
         auto func = Eval(_t.res->function(), env);
         auto args = evalExpressions(_t.res->arguments(), env);
         return applyFunction(func, args);
+    }
+    if (isType(ast::HashLiteral)) {
+        return evalHashLiteral(_t.res, env);
     }
 
     return _NULL;
@@ -477,7 +482,24 @@ obj_ptr evalIndexExpression(obj_ptr left, obj_ptr index) {
         }
         return arr->Elements[idx];
     }
+    if (type(left) == Hash_Obj) {
+        auto hash = dynamic_cast<Hash *>(left.get());
+        return hash->get(index); 
+    }
     throw newError("index operator not supported: {} {}",
                    TypeToString(type(left)), TypeToString(type(index)));
+}
+
+obj_ptr evalHashLiteral(ast::HashLiteral *hash, env_ptr env) {
+    auto res = make_shared<Hash>();
+    for (auto &pair : hash->pairs) {
+        auto key = Eval(pair.first.get(), env);
+        auto val = Eval(pair.second.get(), env);
+        if (key == nullptr || val == nullptr) {
+            throw newError("key or value is nullptr");
+        }
+        res->insert(key, val);
+    }
+    return res;
 }
 } // namespace eval
