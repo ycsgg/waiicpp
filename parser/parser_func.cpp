@@ -357,8 +357,8 @@ unique_ptr<Statement> Parser::parseStatement() {
         return parseForStatement();
     case token::WHILE:
         return parseWhileStatement();
-    case token::LBRACE:
-        return parseBlockStatement();
+    // case token::LBRACE:
+    //     return parseBlockStatement();
     default:
         return parseExpressionStatement();
     }
