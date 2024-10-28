@@ -16,13 +16,11 @@ obj_ptr first(const std::vector<obj_ptr> &args);
 obj_ptr last(const std::vector<obj_ptr> &args);
 obj_ptr rest(const std::vector<obj_ptr> &args);
 obj_ptr append(const std::vector<obj_ptr> &args);
+obj_ptr print(const std::vector<obj_ptr> &args);
 
-
-static unordered_map<string, BuiltinFunction> BUILTINS = {{"len", len},
-                                                          {"first", first},
-                                                          {"last", last},
-                                                          {"rest", rest},
-                                                          {"append", append}};
+static unordered_map<string, BuiltinFunction> BUILTINS = {
+    {"len", len},   {"first", first},   {"last", last},
+    {"rest", rest}, {"append", append}, {"print", print}};
 
 obj_ptr len(const std::vector<obj_ptr> &args) {
     if (args.size() != 1) {
@@ -131,5 +129,11 @@ obj_ptr append(const std::vector<obj_ptr> &args) {
     }
     throw newError("argument to `append` not supported, got {}",
                    TypeToString(type(args[0])));
+}
+obj_ptr print(const std::vector<obj_ptr> &args) {
+    for (auto &arg : args) {
+        std::cout << arg->Inspect() << std::endl;
+    }
+    return _NULL;
 }
 } // namespace object

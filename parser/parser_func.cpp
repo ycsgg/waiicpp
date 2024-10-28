@@ -337,7 +337,6 @@ unique_ptr<Program> Parser::ParserProgram() {
     while (curToken.Type != token::END) {
         // std::cerr << curToken.Literal << std::endl;
         auto statement = parseStatement();
-        // std::cerr << statement->output() << std::endl;
         if (statement != nullptr) {
             program->Statements.push_back(move(statement));
         }
@@ -357,8 +356,6 @@ unique_ptr<Statement> Parser::parseStatement() {
         return parseForStatement();
     case token::WHILE:
         return parseWhileStatement();
-    // case token::LBRACE:
-    //     return parseBlockStatement();
     default:
         return parseExpressionStatement();
     }
